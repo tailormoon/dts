@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /dts-v1/;
 
-/* This dts file describes the Asus Transformer Pad tf300t tablet */
-/* CPU Speedo ID 3, Soc Speedo ID 2, CPU Process: 1, Core Process: 0 */
+/* This dts file describes the Asus Transformer Pad TF300T tablet */
+/* CPU Speedo ID 5, Soc Speedo ID 2, CPU Process: 2, Core Process: 0 */
 
 #include "tegra30-asus-transformer-common.dtsi"
 
@@ -81,19 +81,21 @@
 
 	i2c@7000c400 {		/*i2c2*/
 		/* Elan EKTF3624, EKTH3500 touchscreen */
-	touchscreen@10 {
-		    compatible = "elan,ektf3624", "elan,ekth3500";	// HV: ekth1036
-		    reg = <0x10>;
-		    interrupt-parent = <&gpio>;
-		    interrupts = <TEGRA_GPIO(H, 4) IRQ_TYPE_EDGE_FALLING>;	// touch_irq, in, hi
-		    reset-gpios = <&gpio TEGRA_GPIO(H, 6) GPIO_ACTIVE_LOW>;	// touch_reset, out, hi
-		    wakeup-source;
-		    touchscreen-size-x = <2240>;
-		    touchscreen-size-y = <1408>;
-		    touchscreen-x-mm = <210>;
-		    touchscreen-y-mm = <132>;
-		    touchscreen-inverted-y;
-	};
+		touchscreen@10 {
+			compatible = "elan,ektf3624", "elan,ekth3500";	// HV: ekth1036
+			reg = <0x10>;
+
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(H, 4) IRQ_TYPE_EDGE_FALLING>;	// touch_irq, in, hi
+			reset-gpios = <&gpio TEGRA_GPIO(H, 6) GPIO_ACTIVE_LOW>;	// touch_reset, out, hi
+			wakeup-source;
+
+			touchscreen-size-x = <2240>;
+			touchscreen-size-y = <1408>;
+			touchscreen-x-mm = <210>;
+			touchscreen-y-mm = <132>;
+			touchscreen-inverted-y;
+		};
 
 	i2c@7000c500 {		/*i2c3*/
 		clock-frequency = <400000>;
@@ -120,38 +122,39 @@
 	};
 
 	i2c@7000d000 {		/*i2c5*/
-		/* Realtek ALC5631 audio codec */
-	wm8903: wm8903@1a {
-		compatible = "wlf,wm8903";
-		reg = <0x1a>;
-		interrupt-parent = <&gpio>;
-		interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;	// wm8903, in, lo
+		/* WM8903 audio codec */
+		wm8903: audio-codec@1a {
+			compatible = "wlf,wm8903";
+			reg = <0x1a>;
 
-		gpio-controller;
-		#gpio-cells = <2>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;	// wm8903, in, lo
+			gpio-controller;
+			#gpio-cells = <2>;
 
-		micdet-cfg = <0>;
-		micdet-delay = <100>;
-		gpio-cfg = <0xffffffff 0xffffffff 0 0xffffffff 0xffffffff>;
-	};	
-	
+			micdet-cfg = <0>;
+			micdet-delay = <100>;
+			gpio-cfg = <0xffffffff 0xffffffff 0 0xffffffff 0xffffffff>;
+		};
+	};
+
 	/* internal SDIO WiFi sdmmc3 */
-	sdhci@78000400 {
+	sdmmc3: mmc@78000400 {
 		/* Azurewave AW-NH615 BCM4329 */
 		wifi@1 {
 			compatible = "brcm,bcm4329-fmac";
 		};
 	};
 
-	/* innolux,n101icg-l21", "innolux,g101ice-l01 "simple-panel"*/
+	/* innolux,n101icg-l21 or innolux,g101ice-l01 */
 	display-panel {
 		compatible = "innolux,n101icg-l21", "innolux,g101ice-l01", "simple-panel";
 
 		power-supply = <&vdd_pnl>;
 		backlight = <&backlight_lvds>;
 
-		width-mm = <136>;			/* hsd101pww2 panel has same properties as */
-		height-mm = <217>;			/* hsd070pww1, only difference is physical size */
+		width-mm = <136>;
+		height-mm = <217>;
 
 		data-mapping = "jeida-24";
 
@@ -205,16 +208,10 @@
 		};
 	};
 
-	vibrator {
-		compatible = "gpio-vibrator";
-		enable-gpios = <&gpio TEGRA_GPIO(H, 7) GPIO_ACTIVE_HIGH>;
-		vcc-supply = <&vdd_3v3_sys>;
-	};
-
 	sound {
-		compatible = "asus,tf300t-audio",
+		compatible = "nvidia,tegra-audio-wm8903-tf300t",
 			     "nvidia,tegra-audio-wm8903";
-		nvidia,model = "ASUS TF300T";
+		nvidia,model = "ASUS Transformer Pad TF300T WM8903";
 
 		nvidia,audio-routing =
 			"Headphone Jack", "HPOUTR",
@@ -229,7 +226,6 @@
 		nvidia,i2s-controller = <&tegra_i2s1>;
 		nvidia,audio-codec = <&wm8903>;
 
-		// speaker power: vdd_5v0_reg
 		nvidia,spkr-en-gpios = <&wm8903 2 GPIO_ACTIVE_HIGH>;
 		nvidia,hp-det-gpios = <&gpio TEGRA_GPIO(W, 2) GPIO_ACTIVE_LOW>;	// h2w_detect, in, hi
 
