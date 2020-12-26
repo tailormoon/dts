@@ -7,7 +7,7 @@
 #include "tegra30-asus-transformer-common.dtsi"
 
 / {
-	model = "Asus Transformer Pad tf300t";
+	model = "Asus Transformer Pad TF300T";
 	compatible = "asus,tf300t", "nvidia,tegra30";
 
 	host1x@50000000 {
@@ -24,16 +24,14 @@
 			};
 		};
 
-		hdmi: dc@54240000 { };
-
-		hdmi@54280000 {
+		hdmi: hdmi@54280000 {
 			status = "okay";
 
-			hdmi-supply = <&vdd_5v0_sys>;
+			hdmi-supply = <&hdmi_5v0_sys>;
 			pll-supply = <&vdd_1v8>;
 			vdd-supply = <&vdd_3v3_sys>;
 
-			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;	// hdmi_hpd, in, lo
+			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
 			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
 		};
 	};
@@ -72,22 +70,15 @@
 		};
 	};
 
-	uartc: serial@70006200 {
-		/* Azurewave AW-NH615 BCM4329B1 */
-		bluetooth {
-			compatible = "brcm,bcm4329-bt";
-		};
-	};
-
 	i2c@7000c400 {		/*i2c2*/
-		/* Elan EKTF3624, EKTH3500 touchscreen */
+		/* Elan EKTF3624 or EKTH3500 touchscreen */
 		touchscreen@10 {
 			compatible = "elan,ektf3624", "elan,ekth3500";	// HV: ekth1036
 			reg = <0x10>;
 
 			interrupt-parent = <&gpio>;
-			interrupts = <TEGRA_GPIO(H, 4) IRQ_TYPE_EDGE_FALLING>;	// touch_irq, in, hi
-			reset-gpios = <&gpio TEGRA_GPIO(H, 6) GPIO_ACTIVE_LOW>;	// touch_reset, out, hi
+			interrupts = <TEGRA_GPIO(H, 4) IRQ_TYPE_EDGE_FALLING>;
+			reset-gpios = <&gpio TEGRA_GPIO(H, 6) GPIO_ACTIVE_LOW>;
 			wakeup-source;
 
 			touchscreen-size-x = <2240>;
@@ -100,21 +91,22 @@
 	i2c@7000c500 {		/*i2c3*/
 		clock-frequency = <400000>;
 
-		gyro@68 {
-			mount-matrix =   "-1", "0",  "0",
-					"0",  "1",  "0",
-					 "0",  "0", "-1";
+		mpu3050@68 {
+			mount-matrix =   "-1",  "0",  "0",
+					  "0",  "1",  "0",
+					  "0",  "0", "-1";
 
+			/* External I2C interface */
 			i2c-gate {
-				accel: accel@f {
-					mount-matrix =  "0",  "1",  "0",
+				accelerometer@f {
+					mount-matrix =   "0",  "1",  "0",
 							 "1",  "0",  "0",
 							 "0",  "0", "-1";
 				};
 
-				compass: compass@e {
-					mount-matrix =  "0",  "-1",  "0",
-							 "-1", "0",  "0",
+				magnetometer@e {
+					mount-matrix =   "0", "-1",  "0",
+							"-1",  "0",  "0",
 							 "0",  "0", "-1";
 				};
 			};
@@ -128,7 +120,7 @@
 			reg = <0x1a>;
 
 			interrupt-parent = <&gpio>;
-			interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;	// wm8903, in, lo
+			interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
 			gpio-controller;
 			#gpio-cells = <2>;
 
@@ -138,17 +130,9 @@
 		};
 	};
 
-	/* internal SDIO WiFi sdmmc3 */
-	sdmmc3: mmc@78000400 {
-		/* Azurewave AW-NH615 BCM4329 */
-		wifi@1 {
-			compatible = "brcm,bcm4329-fmac";
-		};
-	};
-
 	/* innolux,n101icg-l21 or innolux,g101ice-l01 */
 	display-panel {
-		compatible = "innolux,n101icg-l21", "innolux,g101ice-l01", "simple-panel";
+		compatible = "innolux,n101icg-l21", "innolux,g101ice-l01", "panel-lvds";
 
 		power-supply = <&vdd_pnl>;
 		backlight = <&backlight_lvds>;
@@ -211,7 +195,7 @@
 	sound {
 		compatible = "nvidia,tegra-audio-wm8903-tf300t",
 			     "nvidia,tegra-audio-wm8903";
-		nvidia,model = "ASUS Transformer Pad TF300T WM8903";
+		nvidia,model = "ASUS TF300T WM8903";
 
 		nvidia,audio-routing =
 			"Headphone Jack", "HPOUTR",
@@ -227,14 +211,18 @@
 		nvidia,audio-codec = <&wm8903>;
 
 		nvidia,spkr-en-gpios = <&wm8903 2 GPIO_ACTIVE_HIGH>;
-		nvidia,hp-det-gpios = <&gpio TEGRA_GPIO(W, 2) GPIO_ACTIVE_LOW>;	// h2w_detect, in, hi
+		nvidia,hp-det-gpios = <&gpio TEGRA_GPIO(W, 2) GPIO_ACTIVE_LOW>;
 
 		clocks = <&tegra_car TEGRA30_CLK_PLL_A>,
 			 <&tegra_car TEGRA30_CLK_PLL_A_OUT0>,
 			 <&tegra_car TEGRA30_CLK_EXTERN1>;
 		clock-names = "pll_a", "pll_a_out0", "mclk";
 
-		// TODO: extern1 <- pll_p_out1 <- pll_a [12288 kHz]
+		assigned-clocks = <&tegra_car TEGRA30_CLK_EXTERN1>,
+				  <&tegra_pmc TEGRA_PMC_CLK_OUT_1>;
+
+		assigned-clock-parents = <&tegra_car TEGRA30_CLK_PLL_A_OUT0>,
+					 <&tegra_car TEGRA30_CLK_EXTERN1>;
 	};
 
 	memory-controller@7000f000 {
